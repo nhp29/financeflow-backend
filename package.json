@@ -1,4 +1,5 @@
-"name": "financeflow-backend",
+{
+  "name": "financeflow-backend",
 "version": "1.0.0",
 "description": "API untuk aplikasi FinanceFlow",
 "main": "server.js",
