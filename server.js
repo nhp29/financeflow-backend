@@ -22,6 +22,14 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
+// Penting: Mengizinkan Vercel mengakses API ini
+app.use(cors({
+    origin: ['https://financeflow-frontend-sigma.vercel.app', 'http://localhost:5173'], // Ganti dengan URL Vercel asli Anda
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+
 // Middleware Otentikasi (JWT)
 const verifyToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
