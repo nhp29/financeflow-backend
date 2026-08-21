@@ -91,30 +91,53 @@ app.get('/api/health', (req, res) => {
 });
 
 // Dashboard Data Endpoint
+// Endpoint untuk mengambil data Dashboard dari Database
 app.get('/api/dashboard', verifyToken, async (req, res) => {
-    const dashboardData = {
-        kpi: {
-            totalSaldo: "Rp 25.785.000", pemasukan: "Rp 0", pengeluaran: "Rp 940.000",
-            rasioTabungan: "0.0%", nilaiKekayaan: "Rp 25.785.000", statusKeuangan: 20
-        },
-        upcomingBills: [
-            { id: 1, name: "Netflix", amount: "Rp 57.000", due: "Due in 2d", progress: 80, color: "bg-red-500" },
-            { id: 2, name: "Cicilan Nmax", amount: "Rp 1.785.000", due: "Due in 3d", progress: 60, color: "bg-blue-500" }
-        ],
-        recentTransactions: [
-            { id: 1, date: "10 Jul", category: "Belanja", amount: "-Rp 450.000", color: "text-red-500" },
-            { id: 2, date: "Kemarin", category: "Lainnya", amount: "-Rp 210.000", color: "text-red-500" }
-        ],
-        accountBalances: [
-            { id: 1, name: "BCA", amount: "Rp 18.060.000", logo: "bg-blue-600" },
-            { id: 2, name: "Gopay", amount: "Rp 7.725.000", logo: "bg-green-500" }
-        ],
-        expenseDetails: [
-            { label: 'Belanja', value: 50, color: '#3b82f6' },
-            { label: 'Lainnya', value: 20, color: '#ef4444' }
-        ]
-    };
-    res.status(200).json({ success: true, data: dashboardData });
+    try {
+        const userId = req.user.id; // Diambil dari JWT Token yang valid
+
+        // 1. Query Total Saldo (Dari tabel accounts)
+        const accountsResult = await pool.query(
+            'SELECT SUM(balance) as total_saldo FROM accounts WHERE user_id = $1 AND is_active = true', 
+            [userId]
+        );
+        const totalSaldo = accountsResult.rows[0].total_saldo || 0;
+
+        // 2. Query Pemasukan & Pengeluaran Bulan Ini (Dari tabel transactions)
+        // (Contoh query sederhana, Anda bisa menyesuaikan dengan tanggal)
+        const incomeResult = await pool.query(`
+            SELECT SUM(t.amount) as total 
+            FROM transactions t 
+            JOIN categories c ON t.category_id = c.id 
+            WHERE t.user_id = $1 AND c.type = 'INCOME'
+        `, [userId]);
+        const totalPemasukan = incomeResult.rows[0].total || 0;
+
+        const expenseResult = await pool.query(`
+            SELECT SUM(t.amount) as total 
+            FROM transactions t 
+            JOIN categories c ON t.category_id = c.id 
+            WHERE t.user_id = $1 AND c.type = 'EXPENSE'
+        `, [userId]);
+        const totalPengeluaran = expenseResult.rows[0].total || 0;
+
+        // 3. Susun data untuk dikirim ke React (format JSON)
+        const dashboardData = {
+            kpi: {
+                totalSaldo: `Rp ${Number(totalSaldo).toLocaleString('id-ID')}`,
+                pemasukan: `Rp ${Number(totalPemasukan).toLocaleString('id-ID')}`,
+                pengeluaran: `Rp ${Number(totalPengeluaran).toLocaleString('id-ID')}`,
+                // ... hitung rasio dll
+            },
+            // ... tambahkan query untuk upcomingBills, recentTransactions, dll
+        };
+
+        res.status(200).json({ success: true, data: dashboardData });
+
+    } catch (error) {
+        console.error("Database error:", error);
+        res.status(500).json({ success: false, message: 'Gagal mengambil data dari database.' });
+    }
 });
 
 app.listen(port, () => { console.log(`🚀 API running on port ${port}`); });
