@@ -24,7 +24,7 @@ const pool = new Pool({
 
 // Penting: Mengizinkan Vercel mengakses API ini
 app.use(cors({
-    origin: ['https://financeflow-frontend-sigma.vercel.app', 'https://financeflow-frontend-sigma.vercel.app/'], // Ganti dengan URL Vercel asli Anda
+    origin: ['https://financeflow-frontend-sigma.vercel.app', 'http://localhost:5173'], // Ganti dengan URL Vercel asli Anda
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
